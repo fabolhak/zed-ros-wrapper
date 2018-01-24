@@ -18,7 +18,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
 <robot name="zed_camera">
 
-    <link name="zed_left_camera">
+    <link name="left_optical">
         <visual>
             <origin xyz="0 0 0" rpy="0 1.57 0"/>
             <geometry>
@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             </material>
         </visual>
     </link>
-    <link name="zed_center">
+    <link name="zed_camera">
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <geometry>
@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             </material>
         </visual>
     </link>
-    <link name="zed_right_camera">
+    <link name="right_optical">
         <visual>
             <origin xyz="0 0 0" rpy="0 1.57 0"/>
             <geometry>
@@ -51,23 +51,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             </material>
         </visual>
     </link>
-    <link name="zed_depth_camera" />
-
-    <joint name="zed_left_camera_joint" type="fixed">
-        <parent link="zed_center"/>
-        <child link="zed_left_camera"/>
-        <origin xyz="0 0.06 0" rpy="0 0 0" />
+    
+    <joint name="left_optical_joint" type="fixed">
+        <parent link="zed_camera"/>
+        <child link="left_optical"/>
+        <origin xyz="0 0.00 0" rpy="0 0 0" />
     </joint>
-    <joint name="zed_depth_camera_joint" type="fixed">
-        <parent link="zed_left_camera"/>
-        <child link="zed_depth_camera"/>
-        <origin xyz="0 0 0" rpy="-1.5707963267948966 0 -1.5707963267948966" />
-    </joint>
-
-    <joint name="zed_right_camera_joint" type="fixed">
-        <parent link="zed_center"/>
-        <child link="zed_right_camera"/>
-        <origin xyz="0 -0.06 0" rpy="0 0 0" />
+    <joint name="right_optical_joint" type="fixed">
+        <parent link="zed_camera"/>
+        <child link="right_optical"/>
+        <origin xyz="0.12 0 0" rpy="0 0 0" />
     </joint>
 
 </robot>
