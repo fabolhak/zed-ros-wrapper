@@ -567,11 +567,8 @@ namespace zed_wrapper {
 
                     grabbing = false;
 
-                    if (grab_status != sl::ERROR_CODE::SUCCESS) { // Detect if a error occurred (for example: the zed have been disconnected) and re-initialize the ZED
-                        if (grab_status == sl::ERROR_CODE_NOT_A_NEW_FRAME) {
-
-                        } else NODELET_INFO_ONCE(toString(grab_status));
-                            NODELET_DEBUG("Wait for a new image to proceed");
+                    if (old_image) { // Detect if a error occurred (for example: the zed have been disconnected) and re-initialize the ZED
+                        NODELET_DEBUG("Wait for a new image to proceed");
 
                         std::this_thread::sleep_for(std::chrono::milliseconds(2));
                         if ((t - old_t).toSec() > 5) {
