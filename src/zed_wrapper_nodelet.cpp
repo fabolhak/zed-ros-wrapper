@@ -52,6 +52,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 
+#include "XmlRpcException.h"
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -69,6 +71,8 @@
 using namespace std;
 
 namespace zed_wrapper {
+
+    const int COV_SIZE = 36;
 
     int checkCameraReady(unsigned int serial_number) {
         int id = -1;
@@ -139,8 +143,15 @@ namespace zed_wrapper {
         sl::Camera zed;
         unsigned int serial_number;
 
+        // Covariance
+        boost::array<double, COV_SIZE> covariance_matrix;
+
         // flags
         int confidence;
+        int exposure;
+        int gain;
+        bool autoExposure;
+        bool triggerAutoExposure;
         bool computeDepth;
         bool grabbing = false;
         int openniDepthMode = 0; // 16 bit UC data in mm else 32F in m, for more info http://www.ros.org/reps/rep-0118.html
@@ -298,6 +309,7 @@ namespace zed_wrapper {
             odom.pose.pose.orientation.y = base2.rotation.y;
             odom.pose.pose.orientation.z = base2.rotation.z;
             odom.pose.pose.orientation.w = base2.rotation.w;
+            odom.pose.covariance = covariance_matrix;
             // Publish odometry message
             pub_odom.publish(odom);
         }
@@ -477,8 +489,26 @@ namespace zed_wrapper {
         }
 
         void callback(zed_wrapper::ZedConfig &config, uint32_t level) {
-            NODELET_INFO("Reconfigure confidence : %d", config.confidence);
-            confidence = config.confidence;
+            switch (level) {
+                case 0:
+                    NODELET_INFO("Reconfigure confidence : %d", config.confidence);
+                    confidence = config.confidence;
+                    break;
+                case 1:
+                    NODELET_INFO("Reconfigure exposure : %d", config.exposure);
+                    exposure = config.exposure;
+                    break;
+                case 2:
+                    NODELET_INFO("Reconfigure gain : %d", config.gain);
+                    gain = config.gain;
+                    break;
+                case 3:
+                    NODELET_INFO("Reconfigure auto control of exposure and gain : %s", config.auto_exposure ? "Enable" : "Disable");
+                    autoExposure = config.auto_exposure;
+                    if (autoExposure)
+                        triggerAutoExposure = true;
+                    break;
+            }
         }
 
         void device_poll() {
@@ -594,6 +624,23 @@ namespace zed_wrapper {
                     }
 
                     old_t = ros::Time::now();
+
+                    if (autoExposure) {
+                        // getCameraSettings() can't check status of auto exposure
+                        // triggerAutoExposure is used to execute setCameraSettings() only once
+                        if (triggerAutoExposure) {
+                            zed.setCameraSettings(sl::CAMERA_SETTINGS_EXPOSURE, 0, true);
+                            triggerAutoExposure = false;
+                        }
+                    } else {
+                        int actual_exposure = zed.getCameraSettings(sl::CAMERA_SETTINGS_EXPOSURE);
+                        if (actual_exposure != exposure)
+                            zed.setCameraSettings(sl::CAMERA_SETTINGS_EXPOSURE, exposure);
+
+                        int actual_gain = zed.getCameraSettings(sl::CAMERA_SETTINGS_GAIN);
+                        if (actual_gain != gain)
+                            zed.setCameraSettings(sl::CAMERA_SETTINGS_GAIN, gain);
+                    }
 
                     // Publish the left == rgb image if someone has subscribed to
                     if (left_SubNumber > 0) {
@@ -857,14 +904,51 @@ namespace zed_wrapper {
 
             serial_number = zed.getCameraInformation().serial_number;
 
-            //Reconfigure confidence
+            //Reconfigure parameters
             server = boost::make_shared<dynamic_reconfigure::Server < zed_wrapper::ZedConfig >> ();
             dynamic_reconfigure::Server<zed_wrapper::ZedConfig>::CallbackType f;
             f = boost::bind(&ZEDWrapperNodelet::callback, this, _1, _2);
             server->setCallback(f);
 
             nh_ns.getParam("confidence", confidence);
+            nh_ns.getParam("exposure", exposure);
+            nh_ns.getParam("gain", gain);
+            nh_ns.getParam("auto_exposure", autoExposure);
+            if (autoExposure)
+                triggerAutoExposure = true;
 
+            // Get covariance matrix
+            XmlRpc::XmlRpcValue cov_matrix_param;
+
+            try
+            {
+                nh_ns.getParam("covariance", cov_matrix_param);
+
+                ROS_ASSERT(cov_matrix_param.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+                if (cov_matrix_param.size() != COV_SIZE)
+                {
+                    NODELET_WARN_STREAM("Configuration vector for covariance should have 36 entries.");
+                }
+
+                for (int i = 0; i < cov_matrix_param.size(); i++)
+                {
+                    // Reading matrices can cause problems if not all numbers
+                    // aren't specified with decimal points. Handle that
+                    // using string streams.
+                    std::ostringstream ostr;
+                    ostr << cov_matrix_param[i];
+                    std::istringstream istr(ostr.str());
+                    istr >> covariance_matrix[i];
+                }
+            }
+            catch (XmlRpc::XmlRpcException &e)
+            {
+                NODELET_FATAL_STREAM("Could not read covariance matrix" <<
+                            " (type: " << cov_matrix_param.getType() <<
+                            ", expected: " << XmlRpc::XmlRpcValue::TypeArray
+                            << "). Error was " << e.getMessage() << "\n");
+            }
 
             // Create all the publishers
             // Image publishers
