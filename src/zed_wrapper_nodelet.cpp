@@ -97,7 +97,6 @@ namespace zed_wrapper {
         std::string odometry_frame_id;
         std::string base_frame_id;
         std::string cloud_frame_id;
-        std::string camera_frame_id;
         // initialization Transform listener
         boost::shared_ptr<tf2_ros::Buffer> tfBuffer;
         boost::shared_ptr<tf2_ros::TransformListener> tf_listener;
@@ -675,7 +674,7 @@ namespace zed_wrapper {
                     // Look up the transformation from base frame to camera link
                     try {
                         // Save the transformation from base to frame
-                        geometry_msgs::TransformStamped b2s = tfBuffer->lookupTransform(base_frame_id, camera_frame_id, t);
+                        geometry_msgs::TransformStamped b2s = tfBuffer->lookupTransform(base_frame_id, left_frame_id, t);
                         // Get the TF2 transformation
                         tf2::fromMsg(b2s.transform, base_to_sensor);
 
@@ -683,7 +682,7 @@ namespace zed_wrapper {
                         ROS_WARN_THROTTLE(10.0, "The tf from '%s' to '%s' does not seem to be available, "
                                 "will assume it as identity!",
                                 base_frame_id.c_str(),
-                                camera_frame_id.c_str());
+                                left_frame_id.c_str());
                         ROS_DEBUG("Transform error: %s", ex.what());
                         base_to_sensor.setIdentity();
                     }
@@ -743,11 +742,11 @@ namespace zed_wrapper {
             nh = getMTNodeHandle();
             nh_ns = getMTPrivateNodeHandle();
 
-            // Set  default coordinate frames
-            // If unknown left and right frames are set in the same camera coordinate frame
+            // Set default coordinate frames
             nh_ns.param<std::string>("odometry_frame", odometry_frame_id, "odometry_frame");
             nh_ns.param<std::string>("base_frame", base_frame_id, "base_frame");
-            nh_ns.param<std::string>("camera_frame", camera_frame_id, "camera_frame");
+            nh_ns.param<std::string>("left_frame", left_frame_id, "left_frame");
+            nh_ns.param<std::string>("right_frame", right_frame_id, "right_frame");
 
             // Get parameters from launch file
             nh_ns.getParam("resolution", resolution);
@@ -766,7 +765,9 @@ namespace zed_wrapper {
             // Print order frames
             ROS_INFO_STREAM("odometry_frame: " << odometry_frame_id);
             ROS_INFO_STREAM("base_frame: " << base_frame_id);
-            ROS_INFO_STREAM("camera_frame: " << camera_frame_id);
+            ROS_INFO_STREAM("left_frame: " << left_frame_id);
+            ROS_INFO_STREAM("right_frame: " << right_frame_id);            
+
             // Status of odometry TF
             ROS_INFO_STREAM("Publish " << odometry_frame_id << " [" << (publish_tf ? "TRUE" : "FALSE") << "]");
 
@@ -778,13 +779,11 @@ namespace zed_wrapper {
             string left_raw_topic = "left/" + img_raw_topic;
             string left_cam_info_topic = "left/camera_info";
             string left_cam_info_raw_topic = "left/camera_info_raw";
-            left_frame_id = camera_frame_id;
 
             string right_topic = "right/" + img_topic;
             string right_raw_topic = "right/" + img_raw_topic;
             string right_cam_info_topic = "right/camera_info";
             string right_cam_info_raw_topic = "right/camera_info_raw";
-            right_frame_id = camera_frame_id;
 
             string depth_topic = "depth/";
             if (openniDepthMode) {
@@ -797,7 +796,7 @@ namespace zed_wrapper {
             string depth_cam_info_topic = "depth/camera_info";
 
             string point_cloud_topic = "point_cloud/cloud_registered";
-            cloud_frame_id = camera_frame_id;
+            cloud_frame_id = left_frame_id;
 
             string odometry_topic = "odom";
 
