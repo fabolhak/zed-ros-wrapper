@@ -24,9 +24,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <!-- Definition coordinate frames -->
     <arg name="publish_tf"            default="true" />
     <arg name="odometry_frame"        default="odom" />
-    <arg name="base_frame"            default="zed_center" />
-    <arg name="camera_frame"          default="zed_left_camera" />
-    <arg name="depth_frame"           default="zed_depth_camera" />
+    <arg name="base_frame"            default="zed_camera" />
+    <arg name="camera_frame"          default="left_optical" />
     <!-- Publish urdf zed -->
     <arg name="publish_urdf"          default="true" />
 
@@ -38,7 +37,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <param name="odometry_frame"        value="$(arg odometry_frame)" />
         <param name="base_frame"            value="$(arg base_frame)" />
         <param name="camera_frame"          value="$(arg camera_frame)" />
-        <param name="depth_frame"           value="$(arg depth_frame)" />
     
         <!-- SVO file path -->
         <param name="svo_filepath"          value="$(arg svo_file)" />
@@ -57,11 +55,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <param name="depth_stabilization"   value="1" />
 
         <!-- ROS topic names -->
-        <param name="rgb_topic"             value="rgb/image_rect_color" />
-        <param name="rgb_raw_topic"         value="rgb/image_raw_color" />
-        <param name="rgb_cam_info_topic"    value="rgb/camera_info" />
-        <param name="rgb_cam_info_raw_topic"    value="rgb/camera_info_raw" />
-
         <param name="left_topic"            value="left/image_rect_color" />
         <param name="left_raw_topic"        value="left/image_raw_color" />
         <param name="left_cam_info_topic"   value="left/camera_info" />
