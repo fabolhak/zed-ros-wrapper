@@ -57,6 +57,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <param name="auto_exposure"         value="true" />
         <param name="depth_stabilization"   value="1" />
 
+        <!-- Covariance matrix for odometry-->
+        <rosparam param="covariance">[1, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0]</rosparam>
+
         <!-- ROS topic names -->
         <param name="left_topic"            value="left/image_rect_color" />
         <param name="left_raw_topic"        value="left/image_raw_color" />
